@@ -31,6 +31,7 @@
     "test:coverage:report": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage"
   },
   "dependencies": {
+    "@prb/math": "^4.0.2",
     "solhint": "^3.6.2"
   }
 }

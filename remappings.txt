@@ -1,2 +1,5 @@
-@prb/test/=lib/prb-test/src/
-forge-std/=lib/forge-std/src/
+@forge-std/=lib/forge-std/src/
+@prb-test/=lib/prb-test/src/
+@prb/math/=lib/prb-math/src/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@solarray/=lib/solarray/src/
