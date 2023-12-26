@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-interface IFundraisingPool {
+interface IPool {
     //** events */
     event Deposit(address indexed _user, uint256 _amount);
 

@@ -7,15 +7,13 @@ import { PRBTest } from "@prb-test/PRBTest.sol";
 import { UD60x18, ud } from "@prb/math/UD60x18.sol";
 import { UUPSProxy } from "../src/libraries/UUPSProxy.sol";
 
-import { Globals } from "../src/Globals.sol";
-import { FundraisingPoolFactory } from "../src/FundraisingPoolFactory.sol";
+import { PoolFactory } from "../src/PoolFactory.sol";
 import { MockERC20 } from "./utils/MockERC20.sol";
 
 abstract contract BaseTest is PRBTest, StdCheats {
     MockERC20 internal usdt;
 
-    Globals public globals;
-    FundraisingPoolFactory public fundraisingPoolFactory;
+    PoolFactory public poolFactory;
 
     address payable GOVERNOR;
     address payable EVENT_HOLDER;
@@ -31,29 +29,21 @@ abstract contract BaseTest is PRBTest, StdCheats {
         EVENT_PARTICIPANT = createUser("EVENT_PARTICIPANT");
         DONATER = createUser("DONATER");
 
-        // deploy globals and set the governor
-        globals = deployAndSetUpGlobals();
-
-        // deploy the ticket factory and set the globals address
-
-        // deploy the funding pool factory and set the globals address
-        fundraisingPoolFactory = new FundraisingPoolFactory(address(globals));
+        // deploy the funding pool factory
+        poolFactory = new PoolFactory();
 
         // label the base test contract
         vm.label(address(usdt), "USDT");
-        vm.label(address(globals), "Globals");
 
         // set event holder as the default msg.sender
         vm.startPrank(EVENT_HOLDER);
     }
 
     function test_setUpState() public {
-        assertEq(globals.governor(), GOVERNOR);
         assertEq(usdt.balanceOf(GOVERNOR), 1_000_000e18);
         assertEq(usdt.balanceOf(EVENT_HOLDER), 1_000_000e18);
         assertEq(usdt.balanceOf(EVENT_PARTICIPANT), 1_000_000e18);
         assertEq(usdt.balanceOf(DONATER), 1_000_000e18);
-        assertTrue(globals.isValidEventHolder(EVENT_HOLDER));
     }
 
     /// @dev Generates a user, labels its address, and funds it with test assets.
@@ -62,12 +52,5 @@ abstract contract BaseTest is PRBTest, StdCheats {
         vm.deal({ account: user, newBalance: 100 ether });
         deal({ token: address(usdt), to: user, give: 1_000_000e18 });
         return user;
-    }
-
-    function deployAndSetUpGlobals() internal returns (Globals _globals) {
-        vm.startPrank(GOVERNOR);
-        _globals = Globals(address(new UUPSProxy(address(new Globals()), "")));
-        _globals.initialize(GOVERNOR);
-        _globals.setValidEventHolder(EVENT_HOLDER, true);
     }
 }
