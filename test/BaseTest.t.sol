@@ -5,7 +5,6 @@ import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 import { PRBTest } from "@prb-test/PRBTest.sol";
 import { UD60x18, ud } from "@prb/math/UD60x18.sol";
-import { UUPSProxy } from "../src/libraries/UUPSProxy.sol";
 
 import { PoolFactory } from "../src/PoolFactory.sol";
 import { MockERC20 } from "./utils/MockERC20.sol";
