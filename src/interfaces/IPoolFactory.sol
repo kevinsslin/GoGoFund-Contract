@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-interface IPoolFactory {
-    event PoolCreated(address indexed issuer_, address indexed pool_);
+import { IPoolFactoryEvent } from "./events/IPoolFactoryEvent.sol";
+
+interface IPoolFactory is IPoolFactoryEvent {
+    /*//////////////////////////////////////////////////////////////////////////
+                        EXTERNAL NON-CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
 
     function createPool(
         address fundAsset_,

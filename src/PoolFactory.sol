@@ -7,8 +7,6 @@ import { Pool } from "./Pool.sol";
 import { IPoolFactory } from "./interfaces/IPoolFactory.sol";
 
 contract PoolFactory is IPoolFactory, Ownable {
-    Pool[] public pools;
-
     constructor() Ownable(msg.sender) { }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -28,10 +26,9 @@ contract PoolFactory is IPoolFactory, Ownable {
         require(fundAsset_ != address(0), "PoolFactory: fund asset is zero address");
         require(startTimestamp_ > block.timestamp, "PoolFactory: start timestamp must be in the future");
         require(endTimestamp_ > startTimestamp_, "PoolFactory: end timestamp must be after start timestamp");
-        require(targetAmount_ > 0, "PoolFactory: target amount must be greater than zero");
+        require(targetAmount_ > 0, "PoolFactory: target amount cannot be zero");
 
         Pool pool = new Pool(fundAsset_, msg.sender, startTimestamp_, endTimestamp_, targetAmount_);
-        pools.push(pool);
         emit PoolCreated(msg.sender, address(pool));
         return (address(pool));
     }
