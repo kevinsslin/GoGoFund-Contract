@@ -10,6 +10,8 @@ interface IPool is IPoolEvent {
 
     function mint(address to_, uint256 id_, uint256 amount_) external returns (bool);
 
+    function mintBatch(address to_, uint256[] memory ids_, uint256[] memory amounts_) external returns (bool);
+
     function withdraw() external;
 
     function refund() external;
@@ -27,6 +29,8 @@ interface IPool is IPoolEvent {
     /*//////////////////////////////////////////////////////////////////////////
                         EXTERNAL CONSTANT FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
+
+    function getFundingRatio() external view returns (uint256 fundingRatio_);
 
     function isPoolOpen() external view returns (bool isOpen_);
 }

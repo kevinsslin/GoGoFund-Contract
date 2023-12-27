@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { UD60x18, ud } from "@prb/math/UD60x18.sol";
 
 import { IPool } from "./interfaces/IPool.sol";
 
@@ -102,6 +103,45 @@ contract Pool is ERC1155, IPool {
         return true;
     }
 
+    function mintBatch(
+        address to_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_
+    )
+        external
+        override
+        onlyPoolOpen
+        returns (bool)
+    {
+        require(to_ != address(0), "Pool: to is zero address");
+        require(ids_.length == amounts_.length, "Pool: ids and amounts length mismatch");
+
+        uint256 totalTransferAmount = 0;
+        for (uint256 i = 0; i < ids_.length; ++i) {
+            require(amounts_[i] > 0, "Pool: amount must be greater than zero");
+            require(totalSupplys[ids_[i]] + amounts_[i] <= _idToMaxSupply[ids_[i]], "Pool: max supply reached");
+
+            totalTransferAmount += _idToPrice[ids_[i]] * amounts_[i];
+            totalSupplys[ids_[i]] += amounts_[i];
+        }
+
+        require(
+            fundAsset.transferFrom(msg.sender, address(this), totalTransferAmount),
+            "Pool: failed to transfer fund asset"
+        );
+
+        _mintBatch(to_, ids_, amounts_, "");
+        emit MintBatch(to_, ids_, amounts_);
+
+        userDepositInfo[msg.sender] += totalTransferAmount;
+        totalDeposit += totalTransferAmount;
+
+        if (fundAsset.balanceOf(address(this)) >= targetAmount) {
+            isTargetReached = true;
+        }
+        return true;
+    }
+
     /// @dev withdraw the fund asset from the pool.
     /// @notice this function can only be called by the issuer.
     function withdraw() external override onlyIssuer {
@@ -191,6 +231,9 @@ contract Pool is ERC1155, IPool {
     /*//////////////////////////////////////////////////////////////////////////
                         EXTERNAL CONSTANT FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
+    function getFundingRatio() external view override returns (uint256 fundingRatio_) {
+        return ud(fundAsset.balanceOf(address(this))).div(ud(targetAmount)).intoUint256();
+    }
 
     function isPoolOpen() external view override returns (bool isOpen_) {
         return _isPoolOpen();

@@ -4,6 +4,8 @@ pragma solidity 0.8.21;
 interface IPoolEvent {
     event Mint(address indexed to_, uint256 indexed id_, uint256 indexed amount_);
 
+    event MintBatch(address indexed to_, uint256[] indexed ids_, uint256[] indexed amounts_);
+
     event Withdraw(address indexed issuer_, uint256 amount_);
 
     event Refund(address indexed user_, uint256 indexed amount_);
