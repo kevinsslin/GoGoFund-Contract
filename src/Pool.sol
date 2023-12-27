@@ -103,6 +103,11 @@ contract Pool is ERC1155, IPool {
         return true;
     }
 
+    /// @dev mint NFTs to the specified address.
+    /// @param to_ the address to mint NFTs to.
+    /// @param ids_ the ids of the NFTs to mint.
+    /// @param amounts_ the amounts of NFTs to mint.
+    /// @return true if the minting was successful.
     function mintBatch(
         address to_,
         uint256[] memory ids_,
