@@ -3,17 +3,23 @@ pragma solidity 0.8.21;
 
 import { Solarray } from "@solarray/Solarray.sol";
 
+import { IPoolFactoryEvent } from "../src/interfaces/events/IPoolFactoryEvent.sol";
+import { Pool } from "../src/Pool.sol";
+
 import "./BaseTest.t.sol";
 
-contract PoolFactoryTest is BaseTest {
+contract PoolFactoryTest is BaseTest, IPoolFactoryEvent {
     function setUp() public override {
         super.setUp();
     }
 
     function test_createPool() external {
-        poolFactory.createPool(
+        vm.expectEmit(true, false, true, true, address(poolFactory));
+        emit PoolCreated(POOL_ISSUER, address(0));
+
+        address poolAddress = poolFactory.createPool(
             address(usdt),
-            "https:test.com",
+            "https:test.com/",
             nowTimestamp + 1 days,
             nowTimestamp + 31 days,
             100_000e18,
@@ -22,5 +28,12 @@ contract PoolFactoryTest is BaseTest {
             Solarray.uint256s(100e18, 200e18, 300e18),
             Solarray.uint256s(1000, 2000, 3000)
         );
+
+        Pool pool = Pool(poolAddress);
+        assertEq(address(pool.fundAsset()), address(usdt));
+        assertEq(pool.uri(0), "https:test.com/0.json");
+        assertEq(pool.startTimestamp(), nowTimestamp + 1 days);
+        assertEq(pool.endTimestamp(), nowTimestamp + 31 days);
+        assertEq(pool.targetAmount(), 100_000e18);
     }
 }

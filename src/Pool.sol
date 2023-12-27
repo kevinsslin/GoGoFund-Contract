@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { UD60x18, ud } from "@prb/math/UD60x18.sol";
 
 import { IPool } from "./interfaces/IPool.sol";
@@ -236,6 +237,10 @@ contract Pool is ERC1155, IPool {
     /*//////////////////////////////////////////////////////////////////////////
                         EXTERNAL CONSTANT FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
+    function uri(uint256 id_) public view override returns (string memory uri_) {
+        return string(abi.encodePacked(super.uri(id_), Strings.toString(id_), ".json"));
+    }
+
     function getFundingRatio() external view override returns (uint256 fundingRatio_) {
         return ud(fundAsset.balanceOf(address(this))).div(ud(targetAmount)).intoUint256();
     }
