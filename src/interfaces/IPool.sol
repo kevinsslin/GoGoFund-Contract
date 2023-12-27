@@ -8,21 +8,21 @@ interface IPool is IPoolEvent {
                         EXTERNAL NON-CONSTANT FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
 
-    function deposit(uint256 amount_) external;
+    function mint(address to_, uint256 id_, uint256 amount_) external returns (bool);
 
     function withdraw() external;
 
-    function redeem() external;
+    function refund() external;
 
-    function setAdmin(address admin_) external;
+    function redeem(uint256 id_, uint256 amount_) external;
 
-    function setFundAsset(address fundAsset_) external;
+    function setIssuer(address newIssuer_) external;
 
-    function setStartTimestamp(uint256 startTimestamp_) external;
+    function setStartTimestamp(uint256 newStartTimestamp_) external;
 
-    function setEndTimestamp(uint256 endTimestamp_) external;
+    function setEndTimestamp(uint256 newEndTimestamp_) external;
 
-    function setTargetAmount(uint256 targetAmount_) external;
+    function setTargetAmount(uint256 newTargetAmount_) external;
 
     /*//////////////////////////////////////////////////////////////////////////
                         EXTERNAL CONSTANT FUNCTIONS

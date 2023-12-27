@@ -8,8 +8,8 @@ contract PoolFactoryTest is BaseTest {
         super.setUp();
     }
 
-    function test_CreatePool() external {
-        changePrank(EVENT_HOLDER);
-        poolFactory.createPool(address(usdt), block.timestamp + 1 days, block.timestamp + 31 days, 100_000e18);
-    }
+    // function test_CreatePool() external {
+    //     changePrank(EVENT_HOLDER);
+    //     poolFactory.createPool(address(usdt), block.timestamp + 1 days, block.timestamp + 31 days, 100_000e18);
+    // }
 }

@@ -15,9 +15,14 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function createPool(
         address fundAsset_,
+        string memory baseURI_,
         uint256 startTimestamp_,
         uint256 endTimestamp_,
-        uint256 targetAmount_
+        uint256 targetAmount_,
+        string[] memory names_,
+        uint256[] memory ids_,
+        uint256[] memory mintPrices_,
+        uint256[] memory maxSupplys_
     )
         external
         override
@@ -28,7 +33,18 @@ contract PoolFactory is IPoolFactory, Ownable {
         require(endTimestamp_ > startTimestamp_, "PoolFactory: end timestamp must be after start timestamp");
         require(targetAmount_ > 0, "PoolFactory: target amount cannot be zero");
 
-        Pool pool = new Pool(fundAsset_, msg.sender, startTimestamp_, endTimestamp_, targetAmount_);
+        Pool pool = new Pool(
+            fundAsset_,
+            msg.sender,
+            baseURI_,
+            startTimestamp_,
+            endTimestamp_,
+            targetAmount_,
+            names_,
+            ids_,
+            mintPrices_,
+            maxSupplys_
+        );
         emit PoolCreated(msg.sender, address(pool));
         return (address(pool));
     }

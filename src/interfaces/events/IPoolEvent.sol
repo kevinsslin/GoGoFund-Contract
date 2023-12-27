@@ -2,13 +2,15 @@
 pragma solidity 0.8.21;
 
 interface IPoolEvent {
-    event Deposit(address indexed user_, uint256 amount_);
+    event Mint(address indexed to_, uint256 indexed id_, uint256 indexed amount_);
 
-    event Withdraw(address indexed admin_, uint256 amount_);
+    event Withdraw(address indexed issuer_, uint256 amount_);
 
-    event Redeem(address indexed user_, uint256 amount_);
+    event Refund(address indexed user_, uint256 indexed amount_);
 
-    event AdminChanged(address indexed oldAdmin_, address indexed newAdmin_);
+    event Redeem(address indexed user_, uint256 indexed id_, uint256 indexed amount_);
+
+    event IssuerChanged(address indexed oldIssuer_, address indexed newIssuer_);
 
     event FundAssetChanged(address indexed oldFundAsset_, address indexed newFundAsset_);
 

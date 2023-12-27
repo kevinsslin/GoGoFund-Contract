@@ -14,18 +14,14 @@ abstract contract BaseTest is PRBTest, StdCheats {
 
     PoolFactory public poolFactory;
 
-    address payable GOVERNOR;
     address payable EVENT_HOLDER;
-    address payable EVENT_PARTICIPANT;
     address payable DONATER;
 
     function setUp() public virtual {
         usdt = new MockERC20("USDT Stablecoin", "USDT");
 
         // create all the users
-        GOVERNOR = createUser("GOVERNOR");
         EVENT_HOLDER = createUser("EVENT_HOLDER");
-        EVENT_PARTICIPANT = createUser("EVENT_PARTICIPANT");
         DONATER = createUser("DONATER");
 
         // deploy the funding pool factory
@@ -39,9 +35,7 @@ abstract contract BaseTest is PRBTest, StdCheats {
     }
 
     function test_setUpState() public {
-        assertEq(usdt.balanceOf(GOVERNOR), 1_000_000e18);
         assertEq(usdt.balanceOf(EVENT_HOLDER), 1_000_000e18);
-        assertEq(usdt.balanceOf(EVENT_PARTICIPANT), 1_000_000e18);
         assertEq(usdt.balanceOf(DONATER), 1_000_000e18);
     }
 
