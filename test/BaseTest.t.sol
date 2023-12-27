@@ -14,29 +14,26 @@ abstract contract BaseTest is PRBTest, StdCheats {
 
     PoolFactory public poolFactory;
 
-    address payable EVENT_HOLDER;
+    address payable POOL_ISSUER;
     address payable DONATER;
 
+    uint256 nowTimestamp;
+
     function setUp() public virtual {
+        // deploy the test contracts and label them
         usdt = new MockERC20("USDT Stablecoin", "USDT");
-
-        // create all the users
-        EVENT_HOLDER = createUser("EVENT_HOLDER");
-        DONATER = createUser("DONATER");
-
-        // deploy the funding pool factory
         poolFactory = new PoolFactory();
 
-        // label the base test contract
         vm.label(address(usdt), "USDT");
+        vm.label(address(poolFactory), "PoolFactory");
+
+        // create all the users
+        POOL_ISSUER = createUser("POOL_ISSUER");
+        DONATER = createUser("DONATER");
 
         // set event holder as the default msg.sender
-        vm.startPrank(EVENT_HOLDER);
-    }
-
-    function test_setUpState() public {
-        assertEq(usdt.balanceOf(EVENT_HOLDER), 1_000_000e18);
-        assertEq(usdt.balanceOf(DONATER), 1_000_000e18);
+        vm.startPrank(POOL_ISSUER);
+        nowTimestamp = block.timestamp;
     }
 
     /// @dev Generates a user, labels its address, and funds it with test assets.

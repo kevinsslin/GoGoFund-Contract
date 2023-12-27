@@ -10,7 +10,7 @@ contract PoolTest is BaseTest {
     // function setUp() public override {
     //     super.setUp();
 
-    //     changePrank(EVENT_HOLDER);
+    //     changePrank(POOL_ISSUER);
     //     (address poolAddress) =
     //         poolFactory.createPool(address(usdt), block.timestamp + 1 days, block.timestamp + 31 days, 100_000e18);
     //     pool = Pool(poolAddress);
@@ -53,14 +53,14 @@ contract PoolTest is BaseTest {
     // function test_Withdraw_RevertWhen_PoolNotClosed() external {
     //     vm.warp(block.timestamp + 1 days);
     //     pool.deposit(100_000e18);
-    //     changePrank(EVENT_HOLDER);
+    //     changePrank(POOL_ISSUER);
     //     vm.expectRevert(bytes("Pool: pool not closed"));
     //     pool.withdraw();
     // }
 
     // function test_Withdraw_RevertWhen_TargetNotReached() external {
     //     vm.warp(block.timestamp + 31 days + 1);
-    //     changePrank(EVENT_HOLDER);
+    //     changePrank(POOL_ISSUER);
     //     vm.expectRevert(bytes("Pool: target not reached"));
     //     pool.withdraw();
     // }
@@ -70,10 +70,10 @@ contract PoolTest is BaseTest {
     //     pool.deposit(500_000e18);
 
     //     vm.warp(block.timestamp + 30 days + 1);
-    //     changePrank(EVENT_HOLDER);
+    //     changePrank(POOL_ISSUER);
     //     pool.withdraw();
 
     //     assertEq(usdt.balanceOf(address(pool)), 0);
-    //     assertEq(usdt.balanceOf(EVENT_HOLDER), 1_000_000e18 + 500_000e18);
+    //     assertEq(usdt.balanceOf(POOL_ISSUER), 1_000_000e18 + 500_000e18);
     // }
 }
