@@ -85,7 +85,7 @@ contract PoolTest is BaseTest, IPoolEvent {
 
         _donatorApproveToPool();
         _mintBatchDefault();
-        assertEq(pool.getFundingRatio(), 700);
+        assertEq(pool.getFundingRatio(), 7000);
     }
 
     function _donatorApproveToPool() internal {
