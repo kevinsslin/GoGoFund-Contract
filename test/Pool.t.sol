@@ -1,79 +1,101 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import "./BaseTest.t.sol";
+import { Solarray } from "@solarray/Solarray.sol";
+
+import { IPoolEvent } from "../src/interfaces/events/IPoolEvent.sol";
 import { Pool } from "../src/Pool.sol";
 
-contract PoolTest is BaseTest {
+import "./BaseTest.t.sol";
+
+contract PoolTest is BaseTest, IPoolEvent {
     Pool public pool;
 
-    // function setUp() public override {
-    //     super.setUp();
+    function setUp() public override {
+        super.setUp();
 
-    //     changePrank(POOL_ISSUER);
-    //     (address poolAddress) =
-    //         poolFactory.createPool(address(usdt), block.timestamp + 1 days, block.timestamp + 31 days, 100_000e18);
-    //     pool = Pool(poolAddress);
+        pool = createDefaultPool();
+    }
 
-    //     // let donater as the default msg.sender
-    //     changePrank(DONATER);
-    //     usdt.approve(address(pool), type(uint256).max);
-    // }
+    function test_mintBatch() external {
+        _donatorApproveToPool();
 
-    // function test_IsPoolOpen() external {
-    //     assertEq(pool.isPoolOpen(), false);
+        vm.expectEmit(true, false, true, true);
+        emit MintBatch(DONATER, Solarray.uint256s(0, 1, 2), Solarray.uint256s(100, 200, 300));
 
-    //     vm.warp(block.timestamp + 1 days);
-    //     assertEq(pool.isPoolOpen(), true);
-    // }
+        pool.mintBatch(DONATER, Solarray.uint256s(0, 1, 2), Solarray.uint256s(100, 200, 300));
 
-    // function test_Deposit_RevertWhen_PoolNotOpen() external {
-    //     vm.expectRevert(bytes("Pool: pool not open"));
-    //     pool.deposit(100e18);
+        uint256 totalTransferAmount = 100e18 * 100 + 200e18 * 200 + 300e18 * 300;
 
-    //     vm.warp(block.timestamp + 31 days + 1);
-    //     vm.expectRevert(bytes("Pool: pool not open"));
-    //     pool.deposit(100e18);
-    // }
+        assertEq(usdt.balanceOf(address(pool)), totalTransferAmount);
+        assertEq(usdt.balanceOf(DONATER), 1_000_000e18 - totalTransferAmount);
+        assertEq(pool.userDepositInfo(DONATER), totalTransferAmount);
+        assertEq(pool.balanceOf(DONATER, 0), 100);
+        assertEq(pool.balanceOf(DONATER, 1), 200);
+        assertEq(pool.balanceOf(DONATER, 2), 300);
+    }
 
-    // function test_Deposit() external {
-    //     vm.warp(block.timestamp + 1 days);
-    //     pool.deposit(100e18);
-    //     assertEq(usdt.balanceOf(address(pool)), 100e18);
-    //     assertEq(usdt.balanceOf(DONATER), 999_900e18);
+    function test_IsPoolOpen() external {
+        assertEq(pool.isPoolOpen(), false);
 
-    //     assertEq(pool.userDepositInfo(DONATER), 100e18);
-    // }
+        vm.warp(nowTimestamp + 1 days);
+        assertEq(pool.isPoolOpen(), true);
 
-    // function test_Withdraw_RevertWhen_NotAdmin() external {
-    //     vm.expectRevert(bytes("Pool: only admin"));
-    //     pool.withdraw();
-    // }
+        vm.warp(nowTimestamp + 31 days + 1);
+        assertEq(pool.isPoolOpen(), false);
+    }
 
-    // function test_Withdraw_RevertWhen_PoolNotClosed() external {
-    //     vm.warp(block.timestamp + 1 days);
-    //     pool.deposit(100_000e18);
-    //     changePrank(POOL_ISSUER);
-    //     vm.expectRevert(bytes("Pool: pool not closed"));
-    //     pool.withdraw();
-    // }
+    function test_withdraw_RevertWhen_NotIssuer() external {
+        changePrank(DONATER);
+        vm.expectRevert(bytes("Pool: only issuer"));
+        pool.withdraw();
+    }
 
-    // function test_Withdraw_RevertWhen_TargetNotReached() external {
-    //     vm.warp(block.timestamp + 31 days + 1);
-    //     changePrank(POOL_ISSUER);
-    //     vm.expectRevert(bytes("Pool: target not reached"));
-    //     pool.withdraw();
-    // }
+    function test_withdraw_RevertWhen_PoolNotClosed() external {
+        _donatorApproveToPool();
+        _mintBatchDefault();
 
-    // function test_Withdraw() external {
-    //     vm.warp(block.timestamp + 1 days);
-    //     pool.deposit(500_000e18);
+        changePrank(POOL_ISSUER);
+        vm.expectRevert(bytes("Pool: pool not closed"));
+        pool.withdraw();
+    }
 
-    //     vm.warp(block.timestamp + 30 days + 1);
-    //     changePrank(POOL_ISSUER);
-    //     pool.withdraw();
+    function test_withdraw_RevertWhen_TargetNotReached() external {
+        vm.warp(block.timestamp + 31 days + 1);
+        changePrank(POOL_ISSUER);
+        vm.expectRevert(bytes("Pool: target not reached"));
+        pool.withdraw();
+    }
 
-    //     assertEq(usdt.balanceOf(address(pool)), 0);
-    //     assertEq(usdt.balanceOf(POOL_ISSUER), 1_000_000e18 + 500_000e18);
-    // }
+    function test_withdraw() external {
+        _donatorApproveToPool();
+        _mintBatchDefault();
+        uint256 totalTransferAmount = _mintBatchDefault();
+
+        vm.warp(block.timestamp + 31 days + 1);
+        changePrank(POOL_ISSUER);
+        pool.withdraw();
+
+        assertEq(usdt.balanceOf(address(pool)), 0);
+        assertEq(usdt.balanceOf(POOL_ISSUER), 1_000_000e18 + totalTransferAmount * 2);
+    }
+
+    function test_getFundingRatio() external {
+        assertEq(pool.getFundingRatio(), 0);
+
+        _donatorApproveToPool();
+        _mintBatchDefault();
+        assertEq(pool.getFundingRatio(), 700);
+    }
+
+    function _donatorApproveToPool() internal {
+        changePrank(DONATER);
+        usdt.approve(address(pool), type(uint256).max);
+        vm.warp(nowTimestamp + 1 days); // warp to pool open time
+    }
+
+    function _mintBatchDefault() internal returns (uint256 totalTransferAmount) {
+        pool.mintBatch(DONATER, Solarray.uint256s(0, 1, 2), Solarray.uint256s(100, 200, 300));
+        totalTransferAmount = 100e18 * 100 + 200e18 * 200 + 300e18 * 300;
+    }
 }

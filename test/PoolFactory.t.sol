@@ -14,7 +14,7 @@ contract PoolFactoryTest is BaseTest, IPoolFactoryEvent {
     }
 
     function test_createPool() external {
-        vm.expectEmit(true, false, true, true, address(poolFactory));
+        vm.expectEmit(true, false, true, true);
         emit PoolCreated(POOL_ISSUER, address(0));
 
         address poolAddress = poolFactory.createPool(
@@ -22,7 +22,7 @@ contract PoolFactoryTest is BaseTest, IPoolFactoryEvent {
             "https:test.com/",
             nowTimestamp + 1 days,
             nowTimestamp + 31 days,
-            100_000e18,
+            200_000e18,
             Solarray.strings("test1", "test2", "test3"),
             Solarray.uint256s(0, 1, 2),
             Solarray.uint256s(100e18, 200e18, 300e18),
@@ -34,6 +34,6 @@ contract PoolFactoryTest is BaseTest, IPoolFactoryEvent {
         assertEq(pool.uri(0), "https:test.com/0.json");
         assertEq(pool.startTimestamp(), nowTimestamp + 1 days);
         assertEq(pool.endTimestamp(), nowTimestamp + 31 days);
-        assertEq(pool.targetAmount(), 100_000e18);
+        assertEq(pool.targetAmount(), 200_000e18);
     }
 }
