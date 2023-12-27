@@ -242,7 +242,7 @@ contract Pool is ERC1155, IPool {
     }
 
     function getFundingRatio() external view override returns (uint256 fundingRatio_) {
-        return ud(fundAsset.balanceOf(address(this))).div(ud(targetAmount)).intoUint256();
+        return ud(fundAsset.balanceOf(address(this))).div(ud(targetAmount)).intoUint256() / 1e15;
     }
 
     function isPoolOpen() external view override returns (bool isOpen_) {
