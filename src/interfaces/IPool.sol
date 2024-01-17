@@ -12,11 +12,17 @@ interface IPool is IPoolEvent {
 
     function mintBatch(address to_, uint256[] memory ids_, uint256[] memory amounts_) external returns (bool);
 
-    function withdraw() external;
+    function issuerWithdraw() external;
 
-    function refund() external;
+    function refundBatch(uint256[] memory ids_, uint256[] memory amounts_) external;
 
     function redeem(uint256 id_, uint256 amount_) external;
+
+    function vote(uint8 phase_, bool support_) external;
+
+    function donatorWithdraw() external;
+
+    function setVotingEndTimestamp(uint256 newVotingEndTimestamp_) external;
 
     function setIssuer(address newIssuer_) external;
 

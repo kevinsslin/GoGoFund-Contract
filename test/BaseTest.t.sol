@@ -53,6 +53,7 @@ abstract contract BaseTest is PRBTest, StdCheats {
             "https:test.com",
             nowTimestamp + 1 days,
             nowTimestamp + 31 days,
+            nowTimestamp + 38 days,
             200_000e18,
             Solarray.strings("test1", "test2", "test3"),
             Solarray.uint256s(0, 1, 2),

@@ -13,6 +13,7 @@ interface IPoolFactory is IPoolFactoryEvent {
         string memory baseURI_,
         uint256 startTimestamp_,
         uint256 endTimestamp_,
+        uint256 votingEndTimestamp_,
         uint256 targetAmount_,
         string[] memory names_,
         uint256[] memory ids_,

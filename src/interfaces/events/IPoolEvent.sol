@@ -6,11 +6,17 @@ interface IPoolEvent {
 
     event MintBatch(address indexed to_, uint256[] indexed ids_, uint256[] indexed amounts_);
 
-    event Withdraw(address indexed issuer_, uint256 amount_);
+    event IssuerWithdrawal(address indexed issuer_, uint256 amount_);
 
-    event Refund(address indexed user_, uint256 indexed amount_);
+    event RefundBatch(address indexed user_, uint256[] indexed ids_, uint256[] indexed amounts_);
 
     event Redeem(address indexed user_, uint256 indexed id_, uint256 indexed amount_);
+
+    event Vote(address indexed user_, uint8 indexed phase_, bool indexed opposed_);
+
+    event DonatorWithdrawal(address indexed donator, uint256 amount);
+
+    event VotingEndTimestampChanged(uint256 indexed oldVotingEndTimestamp_, uint256 indexed newVotingEndTimestamp_);
 
     event IssuerChanged(address indexed oldIssuer_, address indexed newIssuer_);
 

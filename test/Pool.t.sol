@@ -29,7 +29,7 @@ contract PoolTest is BaseTest, IPoolEvent {
 
         assertEq(usdt.balanceOf(address(pool)), totalTransferAmount);
         assertEq(usdt.balanceOf(DONATER), 1_000_000e18 - totalTransferAmount);
-        assertEq(pool.userDepositInfo(DONATER), totalTransferAmount);
+        assertEq(pool.userDepositAmounts(DONATER), totalTransferAmount);
         assertEq(pool.balanceOf(DONATER, 0), 100);
         assertEq(pool.balanceOf(DONATER, 1), 200);
         assertEq(pool.balanceOf(DONATER, 2), 300);
@@ -45,36 +45,36 @@ contract PoolTest is BaseTest, IPoolEvent {
         assertEq(pool.isPoolOpen(), false);
     }
 
-    function test_withdraw_RevertWhen_NotIssuer() external {
+    function test_issuerWithdraw_RevertWhen_NotIssuer() external {
         changePrank(DONATER);
         vm.expectRevert(bytes("Pool: only issuer"));
-        pool.withdraw();
+        pool.issuerWithdraw();
     }
 
-    function test_withdraw_RevertWhen_PoolNotClosed() external {
+    function test_issuerWithdraw_RevertWhen_PoolNotClosed() external {
         _donatorApproveToPool();
         _mintBatchDefault();
 
         changePrank(POOL_ISSUER);
         vm.expectRevert(bytes("Pool: pool not closed"));
-        pool.withdraw();
+        pool.issuerWithdraw();
     }
 
-    function test_withdraw_RevertWhen_TargetNotReached() external {
+    function test_issuerWithdraw_RevertWhen_TargetNotReached() external {
         vm.warp(block.timestamp + 31 days + 1);
         changePrank(POOL_ISSUER);
         vm.expectRevert(bytes("Pool: target not reached"));
-        pool.withdraw();
+        pool.issuerWithdraw();
     }
 
-    function test_withdraw() external {
+    function test_issuerWithdraw() external {
         _donatorApproveToPool();
         _mintBatchDefault();
         uint256 totalTransferAmount = _mintBatchDefault();
 
         vm.warp(block.timestamp + 31 days + 1);
         changePrank(POOL_ISSUER);
-        pool.withdraw();
+        pool.issuerWithdraw();
 
         assertEq(usdt.balanceOf(address(pool)), 0);
         assertEq(usdt.balanceOf(POOL_ISSUER), 1_000_000e18 + totalTransferAmount * 2);

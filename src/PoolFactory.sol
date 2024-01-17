@@ -18,6 +18,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         string memory baseURI_,
         uint256 startTimestamp_,
         uint256 endTimestamp_,
+        uint256 votingEndTimestamp_,
         uint256 targetAmount_,
         string[] memory names_,
         uint256[] memory ids_,
@@ -28,17 +29,13 @@ contract PoolFactory is IPoolFactory, Ownable {
         override
         returns (address pool_)
     {
-        require(fundAsset_ != address(0), "PoolFactory: fund asset is zero address");
-        require(startTimestamp_ > block.timestamp, "PoolFactory: start timestamp must be in the future");
-        require(endTimestamp_ > startTimestamp_, "PoolFactory: end timestamp must be after start timestamp");
-        require(targetAmount_ > 0, "PoolFactory: target amount cannot be zero");
-
         Pool pool = new Pool(
             fundAsset_,
             msg.sender,
             baseURI_,
             startTimestamp_,
             endTimestamp_,
+            votingEndTimestamp_,
             targetAmount_,
             names_,
             ids_,

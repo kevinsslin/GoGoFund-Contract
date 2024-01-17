@@ -13,6 +13,7 @@ contract Pool is ERC1155, IPool {
     address public issuer;
     uint256 public startTimestamp;
     uint256 public endTimestamp;
+    uint256 public votingEndTimestamp;
     uint256 public targetAmount;
     uint256 public totalDeposit;
     bool public isTargetReached;
@@ -23,7 +24,13 @@ contract Pool is ERC1155, IPool {
     uint256[] public maxSupplys;
 
     mapping(uint256 => uint256) public totalSupplys;
-    mapping(address => uint256) public userDepositInfo;
+    mapping(address => uint256) public userDepositAmounts;
+
+    bool public firstPhaseOpposed;
+    bool public secondPhaseOpposed;
+    uint256 public firstPhaseOppose;
+    uint256 public secondPhaseOppose;
+    mapping(address => mapping(uint8 => bool)) public voted;
 
     mapping(uint256 => uint256) internal _idToPrice;
     mapping(uint256 => uint256) internal _idToMaxSupply;
@@ -44,6 +51,7 @@ contract Pool is ERC1155, IPool {
         string memory baseURI_,
         uint256 startTimestamp_,
         uint256 endTimestamp_,
+        uint256 votingEndTimestamp_,
         uint256 targetAmount_,
         string[] memory names_,
         uint256[] memory ids_,
@@ -56,6 +64,7 @@ contract Pool is ERC1155, IPool {
         require(issuer_ != address(0), "Pool: issuer is zero address");
         require(startTimestamp_ > block.timestamp, "Pool: start timestamp must be in the future");
         require(endTimestamp_ > startTimestamp_, "Pool: end timestamp must be after start timestamp");
+        require(votingEndTimestamp_ > endTimestamp_, "Pool: voting end timestamp must be after end timestamp");
         require(targetAmount_ > 0, "Pool: target amount must be greater than zero");
 
         fundAsset = IERC20(fundAsset_);
@@ -68,6 +77,7 @@ contract Pool is ERC1155, IPool {
         _setURI(baseURI_);
         startTimestamp = startTimestamp_;
         endTimestamp = endTimestamp_;
+        votingEndTimestamp = votingEndTimestamp_;
         targetAmount = targetAmount_;
     }
 
@@ -94,7 +104,7 @@ contract Pool is ERC1155, IPool {
         _mint(to_, id_, amount_, "");
         emit Mint(to_, id_, amount_);
 
-        userDepositInfo[msg.sender] += transferAmount;
+        userDepositAmounts[msg.sender] += transferAmount;
         totalSupplys[id_] += amount_;
         totalDeposit += transferAmount;
 
@@ -139,7 +149,7 @@ contract Pool is ERC1155, IPool {
         _mintBatch(to_, ids_, amounts_, "");
         emit MintBatch(to_, ids_, amounts_);
 
-        userDepositInfo[msg.sender] += totalTransferAmount;
+        userDepositAmounts[msg.sender] += totalTransferAmount;
         totalDeposit += totalTransferAmount;
 
         if (fundAsset.balanceOf(address(this)) >= targetAmount) {
@@ -148,31 +158,49 @@ contract Pool is ERC1155, IPool {
         return true;
     }
 
-    /// @dev withdraw the fund asset from the pool.
+    // TODO: protocol revenue
+    /// @dev withdraw the fund asset from the pool if the pool is closed and the target is reached.
     /// @notice this function can only be called by the issuer.
-    function withdraw() external override onlyIssuer {
+    function issuerWithdraw() external override onlyIssuer {
         require(block.timestamp > endTimestamp, "Pool: pool not closed");
         require(isTargetReached == true, "Pool: target not reached");
 
-        uint256 amount = fundAsset.balanceOf(address(this));
-        require(amount > 0, "Pool: no fund asset to withdraw");
-
-        require(fundAsset.transfer(issuer, amount), "Pool: failed to transfer fund asset");
-        emit Withdraw(issuer, amount);
+        uint256 withdrawAmount;
+        if (firstPhaseOpposed) {
+            withdrawAmount = 0;
+        } else if (!firstPhaseOpposed && secondPhaseOpposed) {
+            withdrawAmount = fundAsset.balanceOf(address(this)) / 2;
+        } else {
+            withdrawAmount = fundAsset.balanceOf(address(this));
+        }
+        require(withdrawAmount > 0, "Pool: no fund asset to withdraw");
+        require(fundAsset.transfer(issuer, withdrawAmount), "Pool: failed to transfer fund asset");
+        emit IssuerWithdrawal(issuer, withdrawAmount);
     }
 
-    /// @dev refund the fund asset to the donators if the target is not reached.
-    function refund() external override {
-        require((block.timestamp > endTimestamp) == true, "Pool: pool not closed");
-        require(isTargetReached == false, "Pool: target reached");
+    /// @dev burn the NFTs to refund the fund asset to the donators if the target is not reached.
+    /// @param ids_ the ids of the NFTs to refund.
+    /// @param amounts_ the amounts of NFTs to refund.
+    function refundBatch(uint256[] memory ids_, uint256[] memory amounts_) external override {
+        require(block.timestamp > endTimestamp, "Pool: pool not closed");
+        require(!isTargetReached, "Pool: target reached");
 
-        require(userDepositInfo[msg.sender] > 0, "Pool: no deposit found");
+        require(ids_.length == amounts_.length, "Pool: ids and amounts length mismatch");
 
-        uint256 amount = userDepositInfo[msg.sender];
-        userDepositInfo[msg.sender] = 0;
+        uint256 totalRefundAmount = 0;
+        for (uint256 i = 0; i < ids_.length; ++i) {
+            require(amounts_[i] > 0, "Pool: amount must be greater than zero");
+            require(balanceOf(msg.sender, ids_[i]) >= amounts_[i], "Pool: insufficient balance");
 
-        require(fundAsset.transfer(msg.sender, amount), "Pool: failed to transfer fund asset");
-        emit Refund(msg.sender, amount);
+            totalRefundAmount += _idToPrice[ids_[i]] * amounts_[i];
+        }
+        _burnBatch(msg.sender, ids_, amounts_);
+
+        require(userDepositAmounts[msg.sender] >= totalRefundAmount, "Pool: insufficient deposit amount");
+        userDepositAmounts[msg.sender] -= totalRefundAmount;
+
+        require(fundAsset.transfer(msg.sender, totalRefundAmount), "Pool: failed to transfer fund asset");
+        emit RefundBatch(msg.sender, ids_, amounts_);
     }
 
     /// @dev donator burn the NFTs to redeem the real world asset.
@@ -186,6 +214,78 @@ contract Pool is ERC1155, IPool {
 
         _burn(msg.sender, id_, amount_);
         emit Redeem(msg.sender, id_, amount_);
+    }
+
+    /// @dev allow a user to vote in the pool and record their opposition or support for a specific phase.
+    /// @param phase_ the phase in which the user is voting.
+    /// @param opposed_ whether the user supports (false) or opposes (true) the phase.
+    /// @notice this function can only be called by users who have NFTs and have not voted in the phase before.
+    function vote(uint8 phase_, bool opposed_) external {
+        require(phase_ == 1 || phase_ == 2, "Pool: invalid phase");
+        require(!voted[msg.sender][phase_], "Pool: already voted");
+        require(block.timestamp < votingEndTimestamp, "Pool: voting ended");
+
+        // check if user is eligible to vote by checking if user has any NFTs
+        for (uint256 i = 0; i < ids.length; ++i) {
+            if (balanceOf(msg.sender, ids[i]) > 0) {
+                break;
+            }
+            require(i != ids.length - 1, "Pool: user has no NFTs");
+        }
+
+        voted[msg.sender][phase_] = true;
+
+        // Update the phase support based on the user's deposit amount and check if the phase threshold is reached
+        if (opposed_) {
+            // If user votes to oppose
+            if (phase_ == 1) {
+                firstPhaseOppose += userDepositAmounts[msg.sender];
+                if (firstPhaseOppose >= fundAsset.balanceOf(address(this)) / 2) {
+                    firstPhaseOpposed = true;
+                }
+            } else {
+                secondPhaseOppose += userDepositAmounts[msg.sender];
+                if (secondPhaseOppose >= fundAsset.balanceOf(address(this)) / 2) {
+                    secondPhaseOpposed = true;
+                }
+            }
+        }
+
+        emit Vote(msg.sender, phase_, opposed_);
+    }
+
+    /// @dev allow a donator to withdraw their funds based on the voting results of the phases.
+    /// @notice this function can only be called after the pool is closed and the target is not reached.
+    function donatorWithdraw() external override {
+        require(block.timestamp > votingEndTimestamp, "Pool: still under voting");
+        require(isTargetReached, "Pool: target not reach");
+        require(userDepositAmounts[msg.sender] > 0, "Pool: no deposit to withdraw");
+        require(firstPhaseOpposed || secondPhaseOpposed, "Pool: phases not opposed, cannot withdraw");
+
+        uint256 withdrawAmount = userDepositAmounts[msg.sender];
+
+        // If the first phase is opposed, the donator can withdraw all their funds.
+        // If the first phase is not opposed but the second phase is, they can withdraw half of their funds.
+        if (firstPhaseOpposed) {
+            // Allow withdrawing all funds
+        } else if (secondPhaseOpposed) {
+            // Allow withdrawing half of the funds
+            withdrawAmount = withdrawAmount / 2;
+        }
+
+        userDepositAmounts[msg.sender] = 0;
+        require(fundAsset.transfer(msg.sender, withdrawAmount), "Pool: failed to transfer fund asset");
+        emit DonatorWithdrawal(msg.sender, withdrawAmount);
+    }
+
+    /// @dev set voting end timestamp of the pool.
+    /// @param newVotingEndTimestamp_ the new voting end timestamp of the pool.
+    /// @notice this function can only be called by the issuer.
+    function setVotingEndTimestamp(uint256 newVotingEndTimestamp_) external override onlyIssuer {
+        require(newVotingEndTimestamp_ > endTimestamp, "Pool: voting end timestamp must be after end timestamp");
+        require(newVotingEndTimestamp_ > block.timestamp, "Pool: voting end timestamp must be in the future");
+        emit VotingEndTimestampChanged(votingEndTimestamp, newVotingEndTimestamp_);
+        votingEndTimestamp = newVotingEndTimestamp_;
     }
 
     /// @dev set the issuer of the pool.
