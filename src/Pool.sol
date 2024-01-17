@@ -162,7 +162,7 @@ contract Pool is ERC1155, IPool {
     /// @dev withdraw the fund asset from the pool if the pool is closed and the target is reached.
     /// @notice this function can only be called by the issuer.
     function issuerWithdraw() external override onlyIssuer {
-        require(block.timestamp > endTimestamp, "Pool: pool not closed");
+        require(block.timestamp > votingEndTimestamp, "Pool: still under voting");
         require(isTargetReached == true, "Pool: target not reached");
 
         uint256 withdrawAmount;

@@ -51,17 +51,17 @@ contract PoolTest is BaseTest, IPoolEvent {
         pool.issuerWithdraw();
     }
 
-    function test_issuerWithdraw_RevertWhen_PoolNotClosed() external {
+    function test_issuerWithdraw_RevertWhen_PoolUnderVoting() external {
         _donatorApproveToPool();
         _mintBatchDefault();
 
         changePrank(POOL_ISSUER);
-        vm.expectRevert(bytes("Pool: pool not closed"));
+        vm.expectRevert(bytes("Pool: still under voting"));
         pool.issuerWithdraw();
     }
 
     function test_issuerWithdraw_RevertWhen_TargetNotReached() external {
-        vm.warp(block.timestamp + 31 days + 1);
+        vm.warp(block.timestamp + 38 days + 1);
         changePrank(POOL_ISSUER);
         vm.expectRevert(bytes("Pool: target not reached"));
         pool.issuerWithdraw();
@@ -72,7 +72,7 @@ contract PoolTest is BaseTest, IPoolEvent {
         _mintBatchDefault();
         uint256 totalTransferAmount = _mintBatchDefault();
 
-        vm.warp(block.timestamp + 31 days + 1);
+        vm.warp(block.timestamp + 38 days + 1);
         changePrank(POOL_ISSUER);
         pool.issuerWithdraw();
 
