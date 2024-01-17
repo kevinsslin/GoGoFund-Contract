@@ -6,9 +6,12 @@ import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { UD60x18, ud } from "@prb/math/UD60x18.sol";
 
+import { Pool as P } from "./libraries/DataTypes.sol";
+
 import { IPool } from "./interfaces/IPool.sol";
 
 contract Pool is ERC1155, IPool {
+    address public immutable poolFactory;
     IERC20 public fundAsset;
     address public issuer;
     uint256 public startTimestamp;
@@ -45,40 +48,29 @@ contract Pool is ERC1155, IPool {
         _;
     }
 
-    constructor(
-        address fundAsset_,
-        address issuer_,
-        string memory baseURI_,
-        uint256 startTimestamp_,
-        uint256 endTimestamp_,
-        uint256 votingEndTimestamp_,
-        uint256 targetAmount_,
-        string[] memory names_,
-        uint256[] memory ids_,
-        uint256[] memory mintPrices_,
-        uint256[] memory maxSupplys_
-    )
-        ERC1155(baseURI_)
-    {
-        require(fundAsset_ != address(0), "Pool: fund asset is zero address");
-        require(issuer_ != address(0), "Pool: issuer is zero address");
-        require(startTimestamp_ > block.timestamp, "Pool: start timestamp must be in the future");
-        require(endTimestamp_ > startTimestamp_, "Pool: end timestamp must be after start timestamp");
-        require(votingEndTimestamp_ > endTimestamp_, "Pool: voting end timestamp must be after end timestamp");
-        require(targetAmount_ > 0, "Pool: target amount must be greater than zero");
+    constructor(address poolFactory_, P.Configs memory configs) ERC1155(configs.baseURI) {
+        require(configs.fundAsset != address(0), "Pool: fund asset is zero address");
+        require(configs.issuer != address(0), "Pool: issuer is zero address");
+        require(configs.startTimestamp > block.timestamp, "Pool: start timestamp must be in the future");
+        require(configs.endTimestamp > configs.startTimestamp, "Pool: end timestamp must be after start timestamp");
+        require(
+            configs.votingEndTimestamp > configs.endTimestamp, "Pool: voting end timestamp must be after end timestamp"
+        );
+        require(configs.targetAmount > 0, "Pool: target amount must be greater than zero");
 
-        fundAsset = IERC20(fundAsset_);
-        issuer = issuer_;
-        names = names_;
-        ids = ids_;
-        mintPrices = mintPrices_;
-        maxSupplys = maxSupplys_;
+        poolFactory = poolFactory_;
+        fundAsset = IERC20(configs.fundAsset);
+        issuer = configs.issuer;
+        startTimestamp = configs.startTimestamp;
+        endTimestamp = configs.endTimestamp;
+        votingEndTimestamp = configs.votingEndTimestamp;
+        targetAmount = configs.targetAmount;
+        names = configs.names;
+        ids = configs.ids;
+        mintPrices = configs.mintPrices;
+        maxSupplys = configs.maxSupplys;
         _createMapping();
-        _setURI(baseURI_);
-        startTimestamp = startTimestamp_;
-        endTimestamp = endTimestamp_;
-        votingEndTimestamp = votingEndTimestamp_;
-        targetAmount = targetAmount_;
+        _setURI(configs.baseURI);
     }
 
     /*//////////////////////////////////////////////////////////////////////////

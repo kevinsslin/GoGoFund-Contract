@@ -9,6 +9,8 @@ import { Solarray } from "@solarray/Solarray.sol";
 
 import { MockERC20 } from "./utils/MockERC20.sol";
 
+import { Pool as P } from "../src/libraries/DataTypes.sol";
+
 import { PoolFactory } from "../src/PoolFactory.sol";
 import { Pool } from "../src/Pool.sol";
 
@@ -48,18 +50,21 @@ abstract contract BaseTest is PRBTest, StdCheats {
     }
 
     function createDefaultPool() internal returns (Pool) {
-        address poolAddress = poolFactory.createPool(
-            address(usdt),
-            "https:test.com",
-            nowTimestamp + 1 days,
-            nowTimestamp + 31 days,
-            nowTimestamp + 38 days,
-            200_000e18,
-            Solarray.strings("test1", "test2", "test3"),
-            Solarray.uint256s(0, 1, 2),
-            Solarray.uint256s(100e18, 200e18, 300e18),
-            Solarray.uint256s(1000, 2000, 3000)
-        );
+        P.Configs memory configs = P.Configs({
+            fundAsset: address(usdt),
+            issuer: POOL_ISSUER,
+            baseURI: "https:test.com",
+            startTimestamp: nowTimestamp + 1 days,
+            endTimestamp: nowTimestamp + 31 days,
+            votingEndTimestamp: nowTimestamp + 38 days,
+            targetAmount: 200_000e18,
+            names: Solarray.strings("test1", "test2", "test3"),
+            ids: Solarray.uint256s(0, 1, 2),
+            mintPrices: Solarray.uint256s(100e18, 200e18, 300e18),
+            maxSupplys: Solarray.uint256s(1000, 2000, 3000)
+        });
+
+        address poolAddress = poolFactory.createPool(configs);
         return Pool(poolAddress);
     }
 }
