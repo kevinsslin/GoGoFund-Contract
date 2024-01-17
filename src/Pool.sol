@@ -8,10 +8,10 @@ import { UD60x18, ud } from "@prb/math/UD60x18.sol";
 
 import { Pool as P } from "./libraries/DataTypes.sol";
 
+import { IPoolFactory } from "./interfaces/IPoolFactory.sol";
 import { IPool } from "./interfaces/IPool.sol";
 
 contract Pool is ERC1155, IPool {
-    address public immutable poolFactory;
     IERC20 public fundAsset;
     address public issuer;
     uint256 public startTimestamp;
@@ -38,6 +38,8 @@ contract Pool is ERC1155, IPool {
     mapping(uint256 => uint256) internal _idToPrice;
     mapping(uint256 => uint256) internal _idToMaxSupply;
 
+    IPoolFactory private _poolFactory;
+
     modifier onlyIssuer() {
         require(msg.sender == issuer, "Pool: only issuer");
         _;
@@ -58,7 +60,7 @@ contract Pool is ERC1155, IPool {
         );
         require(configs.targetAmount > 0, "Pool: target amount must be greater than zero");
 
-        poolFactory = poolFactory_;
+        _poolFactory = IPoolFactory(poolFactory_);
         fundAsset = IERC20(configs.fundAsset);
         issuer = configs.issuer;
         startTimestamp = configs.startTimestamp;
@@ -150,23 +152,31 @@ contract Pool is ERC1155, IPool {
         return true;
     }
 
-    // TODO: protocol revenue
     /// @dev withdraw the fund asset from the pool if the pool is closed and the target is reached.
     /// @notice this function can only be called by the issuer.
     function issuerWithdraw() external override onlyIssuer {
         require(block.timestamp > votingEndTimestamp, "Pool: still under voting");
         require(isTargetReached == true, "Pool: target not reached");
 
-        uint256 withdrawAmount;
+        uint256 protocolFeeRate = _poolFactory.protocolFeeRate();
+        uint256 withdrawAmount = fundAsset.balanceOf(address(this));
+
         if (firstPhaseOpposed) {
             withdrawAmount = 0;
         } else if (!firstPhaseOpposed && secondPhaseOpposed) {
-            withdrawAmount = fundAsset.balanceOf(address(this)) / 2;
-        } else {
-            withdrawAmount = fundAsset.balanceOf(address(this));
+            withdrawAmount /= 2;
         }
+
+        uint256 protocolFee = withdrawAmount * protocolFeeRate / 1e18;
+        withdrawAmount -= protocolFee;
+
         require(withdrawAmount > 0, "Pool: no fund asset to withdraw");
-        require(fundAsset.transfer(issuer, withdrawAmount), "Pool: failed to transfer fund asset");
+        require(fundAsset.transfer(issuer, withdrawAmount), "Pool: failed to transfer fund asset to issuer");
+
+        if (protocolFee > 0) {
+            require(fundAsset.transfer(address(_poolFactory), protocolFee), "Pool: failed to transfer protocol fee");
+        }
+
         emit IssuerWithdrawal(issuer, withdrawAmount);
     }
 

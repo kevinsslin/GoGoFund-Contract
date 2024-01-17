@@ -77,7 +77,7 @@ contract PoolTest is BaseTest, IPoolEvent {
         pool.issuerWithdraw();
 
         assertEq(usdt.balanceOf(address(pool)), 0);
-        assertEq(usdt.balanceOf(POOL_ISSUER), 1_000_000e18 + totalTransferAmount * 2);
+        assertEq(usdt.balanceOf(POOL_ISSUER), 1_000_000e18 + totalTransferAmount * 2 * ((1e18 - poolFactory.protocolFeeRate())) / 1e18);
     }
 
     function test_getFundingRatio() external {

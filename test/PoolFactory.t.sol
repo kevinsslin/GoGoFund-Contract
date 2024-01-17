@@ -36,7 +36,6 @@ contract PoolFactoryTest is BaseTest, IPoolFactoryEvent {
         address poolAddress = poolFactory.createPool(configs);
 
         Pool pool = Pool(poolAddress);
-        assertEq(pool.poolFactory(), address(poolFactory));
         assertEq(address(pool.fundAsset()), address(usdt));
         assertEq(pool.uri(0), "https:test.com/0.json");
         assertEq(pool.startTimestamp(), nowTimestamp + 1 days);
