@@ -11,6 +11,8 @@ import { Pool as P } from "./libraries/DataTypes.sol";
 import { IPoolFactory } from "./interfaces/IPoolFactory.sol";
 import { IPool } from "./interfaces/IPool.sol";
 
+/// @title Pool
+/// @dev Contract for creating and managing pools
 contract Pool is ERC1155, IPool {
     IERC20 public fundAsset;
     address public issuer;
@@ -40,16 +42,21 @@ contract Pool is ERC1155, IPool {
 
     IPoolFactory private _poolFactory;
 
+    /// @dev Modifier to check if the message sender is the issuer
     modifier onlyIssuer() {
         require(msg.sender == issuer, "Pool: only issuer");
         _;
     }
 
+    /// @dev Modifier to check if the pool is open
     modifier onlyPoolOpen() {
         require(_isPoolOpen(), "Pool: pool not open");
         _;
     }
 
+    /// @dev Constructor to initialize the Pool contract
+    /// @param poolFactory_ Address of the pool factory
+    /// @param configs Configurations for the pool
     constructor(address poolFactory_, P.Configs memory configs) ERC1155(configs.baseURI) {
         require(configs.fundAsset != address(0), "Pool: fund asset is zero address");
         require(configs.issuer != address(0), "Pool: issuer is zero address");
@@ -186,7 +193,6 @@ contract Pool is ERC1155, IPool {
     function refundBatch(uint256[] memory ids_, uint256[] memory amounts_) external override {
         require(block.timestamp > endTimestamp, "Pool: pool not closed");
         require(!isTargetReached, "Pool: target reached");
-
         require(ids_.length == amounts_.length, "Pool: ids and amounts length mismatch");
 
         uint256 totalRefundAmount = 0;
